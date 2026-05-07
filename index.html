@@ -3,228 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Station de Révision Pro | Lucien</title>
+    <title>Dashboard Études | Lucien</title>
+    <!-- On importe SortableJS pour le déplacement des tâches -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4A90E2; --secondary: #67C23A; --accent: #E6A23C; --danger: #F56C6C; --dark: #2C3E50; --light: #F4F7F6; }
-        body { font-family: 'Poppins', sans-serif; background: var(--light); color: var(--dark); margin: 0; padding-bottom: 50px; }
+        :root { 
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc;
+            --primary: #38bdf8; --secondary: #10b981; --accent: #f59e0b; --danger: #ef4444;
+        }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; }
         
-        header { background: linear-gradient(135deg, var(--primary), #2980b9); color: white; padding: 2rem; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .editable-title { border: none; background: transparent; color: white; font-size: 2.2rem; font-weight: bold; text-align: center; width: 100%; outline: none; transition: 0.3s; }
-        .editable-title:hover { background: rgba(255,255,255,0.1); border-radius: 8px; }
+        header { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); padding: 1.5rem; text-align: center; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 100; }
+        .editable-title { border: none; background: transparent; color: var(--primary); font-size: 1.8rem; font-weight: bold; text-align: center; width: 100%; outline: none; }
 
-        .container { max-width: 1200px; margin: 20px auto; display: grid; grid-template-columns: 2fr 1fr; gap: 25px; padding: 0 15px; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 25px; border-top: 5px solid var(--primary); }
-        
-        /* Progression */
-        .progress-box { text-align: center; }
-        .progress-bg { background: #eee; border-radius: 20px; height: 30px; width: 100%; overflow: hidden; margin: 15px 0; border: 1px solid #ddd; }
-        .progress-fill { background: linear-gradient(90deg, var(--secondary), #85ce61); height: 100%; width: 0%; transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .container { max-width: 1200px; margin: 30px auto; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; padding: 0 20px; }
+        .card { background: var(--card); border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #334155; position: relative; }
 
-        /* Tâches */
-        .task-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .task-input { border: none; border-bottom: 2px solid #eee; width: 80%; padding: 8px; outline: none; font-size: 1rem; transition: 0.3s; }
-        .task-input:focus { border-bottom-color: var(--primary); }
-        .btn-add { background: var(--secondary); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; transition: 0.3s; box-shadow: 0 4px 10px rgba(103, 194, 58, 0.3); }
-        .btn-add:hover { transform: scale(1.1); }
-        .btn-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; opacity: 0.5; }
-        .btn-del:hover { opacity: 1; }
+        /* --- POMODORO ANIMÉ --- */
+        .pomo-wrapper { position: relative; width: 220px; height: 220px; margin: 0 auto 20px; }
+        .pomo-svg { transform: rotate(-90deg); width: 220px; height: 220px; }
+        .pomo-circle-bg { fill: none; stroke: #334155; stroke-width: 8; }
+        .pomo-circle-prog { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 628; stroke-dashoffset: 628; transition: stroke-dashoffset 1s linear; }
+        .time-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; font-weight: bold; font-family: monospace; text-shadow: 0 0 15px var(--primary); }
 
-        /* Planning */
-        .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        .plan-day { background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #eee; border-left: 5px solid var(--accent); }
-        .plan-day strong { color: var(--primary); display: block; margin-bottom: 8px; }
-        .plan-day [contenteditable] { outline: none; min-height: 60px; font-size: 0.95rem; }
+        /* --- TO DO LIST DÉPLAÇABLE --- */
+        #taskList { min-height: 50px; }
+        .task-row { 
+            display: flex; align-items: center; gap: 12px; background: #334155; 
+            padding: 12px; border-radius: 12px; margin-bottom: 10px; cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .task-row:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.4; background: var(--primary); }
+        .task-input { border: none; background: transparent; color: white; width: 100%; outline: none; }
+        .handle { color: #64748b; cursor: grab; font-size: 1.2rem; }
 
-        /* Pomodoro Amélioré */
-        .pomodoro-card { background: var(--dark); color: white; text-align: center; border-top-color: var(--danger); }
-        .timer-display { font-size: 4rem; font-weight: bold; font-family: monospace; margin: 15px 0; color: #ff7675; text-shadow: 0 0 15px rgba(245, 108, 108, 0.3); }
-        .timer-controls select { background: #34495e; color: white; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 15px; cursor: pointer; }
-        .timer-btns { display: flex; justify-content: center; gap: 10px; }
-        .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-play { background: var(--secondary); color: white; }
-        .btn-reset { background: #95a5a6; color: white; }
+        /* --- PLANNING STYLÉ --- */
+        .plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .day-box { background: #334155; border-radius: 15px; padding: 15px; border-top: 4px solid var(--accent); transition: 0.3s; }
+        .day-box:hover { transform: translateY(-5px); border-top-color: var(--primary); }
+        .day-title { font-weight: bold; color: var(--primary); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px; }
+        .day-content { min-height: 60px; outline: none; font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; }
 
-        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+        .btn { padding: 10px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-p { background: var(--primary); color: var(--bg); }
+        .btn-p:hover { filter: brightness(1.2); transform: scale(1.05); }
+
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
     </style>
 </head>
-<body onload="loadData()">
+<body onload="load()">
 
 <header>
-    <input type="text" id="mainTitle" class="editable-title" value="MON OBJECTIF : BREVET 2026" oninput="saveData()">
-    <p>Sauvegarde automatique activée ✅</p>
+    <input type="text" id="title" class="editable-title" value="OBJECTIF BREVET | LUCIEN" oninput="save()">
 </header>
 
 <div class="container">
     <main>
-        <!-- Progression -->
-        <div class="card progress-box">
-            <h3>📊 État d'avancement</h3>
-            <div class="progress-bg"><div class="progress-fill" id="pb"></div></div>
-            <strong id="pt">0% complété</strong>
-        </div>
-
-        <!-- Tâches Dynamiques -->
-        <div class="card">
-            <h3>📝 Liste des Chapitres</h3>
-            <div id="taskList"></div>
-            <button class="btn-add" onclick="addTask()">+</button>
-        </div>
-
         <!-- Planning -->
         <div class="card">
-            <h3>📅 Mon Planning Hebdomadaire</h3>
-            <div class="plan-grid" id="planGrid">
-                <div class="plan-day"><strong>Lundi</strong><div contenteditable="true" oninput="saveData()"></div></div>
-                <div class="plan-day"><strong>Mardi</strong><div contenteditable="true" oninput="saveData()"></div></div>
-                <div class="plan-day"><strong>Mercredi</strong><div contenteditable="true" oninput="saveData()"></div></div>
-                <div class="plan-day"><strong>Jeudi</strong><div contenteditable="true" oninput="saveData()"></div></div>
-                <div class="plan-day"><strong>Vendredi</strong><div contenteditable="true" oninput="saveData()"></div></div>
-                <div class="plan-day"><strong>Samedi</strong><div contenteditable="true" oninput="saveData()"></div></div>
-                <div class="plan-day"><strong>Dimanche</strong><div contenteditable="true" oninput="saveData()"></div></div>
+            <h3>📅 Planning de la Semaine</h3>
+            <div class="plan-grid" id="plan">
+                <!-- Les jours sont générés via JS -->
             </div>
+        </div>
+
+        <!-- To-Do List -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>✅ Ma To-Do (Drag & Drop)</h3>
+                <button class="btn btn-p" onclick="addT()">+ Ajouter</button>
+            </div>
+            <div id="taskList"></div>
         </div>
     </main>
 
     <aside>
-        <!-- Pomodoro Amélioré -->
-        <div class="card pomodoro-card">
-            <h3>⏳ Pomodoro Ajustable</h3>
-            <div class="timer-controls">
-                <label>Durée : </label>
-                <select id="timerSet" onchange="resetTimer()">
-                    <option value="15">15 min (Flash)</option>
-                    <option value="25" selected>25 min (Standard)</option>
-                    <option value="45">45 min (Intensif)</option>
-                    <option value="5">5 min (Pause)</option>
+        <!-- Pomodoro Animé -->
+        <div class="card" style="text-align: center;">
+            <h3>⏳ Focus Session</h3>
+            <div class="pomo-wrapper">
+                <svg class="pomo-svg">
+                    <circle class="pomo-circle-bg" cx="110" cy="110" r="100"></circle>
+                    <circle id="prog" class="pomo-circle-prog" cx="110" cy="110" r="100"></circle>
+                </svg>
+                <div class="time-display" id="tm">25:00</div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <select id="tSet" onchange="resetT()" style="background: #334155; color: white; border: none; padding: 8px; border-radius: 8px;">
+                    <option value="25">Travail (25m)</option>
+                    <option value="5">Pause (5m)</option>
+                    <option value="45">Deep Work (45m)</option>
                 </select>
             </div>
-            <div class="timer-display" id="tm">25:00</div>
-            <div class="timer-btns">
-                <button id="startBtn" class="btn btn-play" onclick="toggleTimer()">Démarrer</button>
-                <button class="btn btn-reset" onclick="resetTimer()">Reset</button>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="sBtn" class="btn btn-p" onclick="toggleT()">Démarrer</button>
+                <button class="btn" style="background:#475569; color:white;" onclick="resetT()">Reset</button>
             </div>
         </div>
-        
-        <!-- Notes -->
-        <div class="card" style="border-top-color: var(--accent);">
-            <h3>📌 Pense-bête</h3>
-            <div id="stickyNotes" contenteditable="true" oninput="saveData()" style="min-height: 150px; outline:none; line-height: 1.6;">
-                - Manger une pomme avant l'épreuve<br>
-                - Respirer un grand coup !
+
+        <div class="card">
+            <h3>📈 Progression</h3>
+            <div style="background:#334155; height:12px; border-radius:10px; overflow:hidden; margin:15px 0;">
+                <div id="pb" style="background:var(--secondary); height:100%; width:0%; transition:1s;"></div>
             </div>
+            <p id="pt" style="text-align:center; font-size:0.9rem;">0% révisé</p>
         </div>
     </aside>
 </div>
 
 <script>
-    // --- GESTION DU LOCAL STORAGE ---
-    function saveData() {
-        const tasks = [];
-        document.querySelectorAll('.task-row').forEach(row => {
-            tasks.push({ 
-                text: row.querySelector('.task-input').value, 
-                done: row.querySelector('input[type="checkbox"]').checked 
-            });
-        });
+    // Initialisation SortableJS pour le Drag & Drop
+    const el = document.getElementById('taskList');
+    Sortable.create(el, { animation: 150, handle: '.handle', onEnd: save });
 
-        const planning = [];
-        document.querySelectorAll('.plan-day div[contenteditable]').forEach(day => {
-            planning.push(day.innerHTML);
-        });
+    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    let timer, s = 1500, isR = false, maxS = 1500;
 
-        const data = {
-            title: document.getElementById('mainTitle').value,
-            tasks: tasks,
-            planning: planning,
-            notes: document.getElementById('stickyNotes').innerHTML
-        };
-        localStorage.setItem('lucien_data', JSON.stringify(data));
-        calcProgress();
-    }
-
-    function loadData() {
-        const saved = localStorage.getItem('lucien_data');
-        if (!saved) { addTask(); return; }
-        
-        const data = JSON.parse(saved);
-        document.getElementById('mainTitle').value = data.title;
-        document.getElementById('stickyNotes').innerHTML = data.notes;
-        
-        // Charger les tâches
-        const list = document.getElementById('taskList');
-        list.innerHTML = "";
-        data.tasks.forEach(t => addTask(t.text, t.done));
-
-        // Charger le planning
-        const days = document.querySelectorAll('.plan-day div[contenteditable]');
-        data.planning.forEach((content, i) => { if(days[i]) days[i].innerHTML = content; });
-
-        calcProgress();
-    }
-
-    // --- GESTION DES TÂCHES ---
-    function addTask(txt = "", checked = false) {
-        const div = document.createElement('div');
-        div.className = 'task-row';
-        div.innerHTML = `
-            <input type="checkbox" ${checked ? 'checked' : ''} onclick="saveData()">
-            <input type="text" class="task-input" value="${txt}" placeholder="Nom du chapitre..." oninput="saveData()">
-            <button class="btn-del" onclick="this.parentElement.remove(); saveData()">✕</button>
+    function addT(txt = "", chk = false) {
+        const d = document.createElement('div');
+        d.className = 'task-row';
+        d.innerHTML = `
+            <span class="handle">⠿</span>
+            <input type="checkbox" ${chk ? 'checked' : ''} onclick="save()">
+            <input type="text" class="task-input" value="${txt}" placeholder="Nouveau chapitre..." oninput="save()">
+            <span style="cursor:pointer; color:var(--danger)" onclick="this.parentElement.remove();save()">✕</span>
         `;
-        document.getElementById('taskList').appendChild(div);
-        saveData();
+        el.appendChild(d);
+        save();
     }
 
-    function calcProgress() {
-        const all = document.querySelectorAll('input[type="checkbox"]');
-        const checked = document.querySelectorAll('input[type="checkbox"]:checked');
-        const percent = all.length > 0 ? Math.round((checked.length / all.length) * 100) : 0;
-        document.getElementById('pb').style.width = percent + '%';
-        document.getElementById('pt').innerText = percent + '% complété';
+    function save() {
+        const data = {
+            t: document.getElementById('title').value,
+            tasks: Array.from(document.querySelectorAll('.task-row')).map(r => ({
+                txt: r.querySelector('.task-input').value,
+                done: r.querySelector('input[type="checkbox"]').checked
+            })),
+            plan: Array.from(document.querySelectorAll('.day-content')).map(d => d.innerHTML)
+        };
+        localStorage.setItem('lucien_v3', JSON.stringify(data));
+        updateProg();
     }
 
-    // --- POMODORO AJUSTABLE ---
-    let timerInterval, timeLeft, isRunning = false;
+    function load() {
+        // Génération Planning
+        const pGrid = document.getElementById('plan');
+        days.forEach(day => {
+            pGrid.innerHTML += `<div class="day-box"><div class="day-title">${day}</div><div class="day-content" contenteditable="true" oninput="save()"></div></div>`;
+        });
 
-    function resetTimer() {
-        clearInterval(timerInterval);
-        isRunning = false;
-        const mins = document.getElementById('timerSet').value;
-        timeLeft = mins * 60;
-        document.getElementById('startBtn').innerText = "Démarrer";
-        updateTimerUI();
-    }
-
-    function toggleTimer() {
-        if (isRunning) {
-            clearInterval(timerInterval);
-            document.getElementById('startBtn').innerText = "Reprendre";
+        const saved = JSON.parse(localStorage.getItem('lucien_v3'));
+        if (saved) {
+            document.getElementById('title').value = saved.t;
+            saved.tasks.forEach(t => addT(t.txt, t.done));
+            const dConts = document.querySelectorAll('.day-content');
+            saved.plan.forEach((c, i) => { if(dConts[i]) dConts[i].innerHTML = c; });
         } else {
-            if (!timeLeft) timeLeft = document.getElementById('timerSet').value * 60;
-            timerInterval = setInterval(() => {
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play();
-                    alert("Session terminée ! Prends une pause.");
-                    resetTimer();
-                } else {
-                    timeLeft--;
-                    updateTimerUI();
-                }
-            }, 1000);
-            document.getElementById('startBtn').innerText = "Pause";
+            ["Maths", "Français"].forEach(t => addT(t));
         }
-        isRunning = !isRunning;
+        updateProg();
+        resetT();
     }
 
-    function updateTimerUI() {
-        const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-        document.getElementById('tm').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+    function updateProg() {
+        const all = document.querySelectorAll('input[type="checkbox"]');
+        const chk = document.querySelectorAll('input[type="checkbox"]:checked');
+        const p = all.length ? Math.round((chk.length / all.length) * 100) : 0;
+        document.getElementById('pb').style.width = p + '%';
+        document.getElementById('pt').innerText = p + '% révisé';
     }
 
-    resetTimer(); // Initialisation au chargement
+    // --- LOGIQUE POMODORO ANIMÉ ---
+    function resetT() {
+        clearInterval(timer); isR = false;
+        maxS = document.getElementById('tSet').value * 60;
+        s = maxS;
+        document.getElementById('sBtn').innerText = "Démarrer";
+        updateUI();
+    }
+
+    function toggleT() {
+        if (isR) { clearInterval(timer); document.getElementById('sBtn').innerText = "Reprendre"; }
+        else {
+            timer = setInterval(() => {
+                if (s <= 0) { 
+                    clearInterval(timer); new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play();
+                    alert("C'est fini !"); resetT(); 
+                } else { s--; updateUI(); }
+            }, 1000);
+            document.getElementById('sBtn').innerText = "Pause";
+        }
+        isR = !isR;
+    }
+
+    function updateUI() {
+        const m = Math.floor(s / 60), sec = s % 60;
+        document.getElementById('tm').innerText = `${m}:${sec < 10 ? '0' : ''}${sec}`;
+        // Animation du cercle
+        const offset = 628 - (s / maxS) * 628;
+        document.getElementById('prog').style.strokeDashoffset = offset;
+    }
 </script>
 
 </body>
