@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Organisateur de Révisions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #4A90E2; --secondary: #67C23A; --dark: #2C3E50; --light: #F4F7F6; }
+        body { font-family: 'Poppins', sans-serif; background: var(--light); margin: 0; padding-bottom: 50px; }
+        
+        header { background: var(--primary); color: white; padding: 2rem; text-align: center; }
+        .editable-title { border: none; background: transparent; color: white; font-size: 2rem; font-weight: bold; text-align: center; width: 100%; outline: none; }
+        
+        .container { max-width: 1100px; margin: 20px auto; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 10px; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Progress Bar */
+        .progress-box { margin-bottom: 30px; text-align: center; }
+        .progress-bg { background: #e0e0e0; border-radius: 20px; height: 25px; width: 100%; overflow: hidden; }
+        .progress-fill { background: var(--secondary); height: 100%; width: 0%; transition: 0.4s; }
+
+        /* Tasks */
+        .task-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .task-input { border: none; border-bottom: 1px solid #ddd; width: 80%; padding: 5px; outline: none; }
+        .btn-add { background: var(--primary); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-weight: bold; }
+        
+        /* Planning */
+        .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .plan-day { background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); }
+        .plan-day contenteditable { display: block; min-height: 40px; outline: none; }
+
+        /* Timer */
+        .timer-card { background: var(--dark); color: white; text-align: center; }
+        .time { font-size: 3rem; margin: 10px 0; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <input type="text" class="editable-title" value="MON OBJECTIF : BREVET 2026" placeholder="Nom de ton objectif...">
+</header>
+
+<div class="container">
+    <main>
+        <div class="card progress-box">
+            <h3>📊 Progression Totale</h3>
+            <div class="progress-bg"><div class="progress-fill" id="pb"></div></div>
+            <p id="pt">0% complété</p>
+        </div>
+
+        <div class="card">
+            <h3>📝 Liste des Chapitres / Tâches</h3>
+            <div id="taskList">
+                <!-- Les tâches s'ajoutent ici -->
+                <div class="task-row">
+                    <input type="checkbox" onclick="calc()">
+                    <input type="text" class="task-input" placeholder="Ex: Maths - Les fonctions">
+                </div>
+            </div>
+            <button class="btn-add" onclick="addTask()">+</button>
+        </div>
+
+        <div class="card">
+            <h3>📅 Planning Hebdomadaire (Cliquable)</h3>
+            <div class="plan-grid">
+                <div class="plan-day"><strong>Lundi</strong><div contenteditable="true">Sujet Français</div></div>
+                <div class="plan-day"><strong>Mardi</strong><div contenteditable="true">Révision Géo</div></div>
+                <div class="plan-day"><strong>Mercredi</strong><div contenteditable="true">Maths intensif</div></div>
+                <div class="plan-day"><strong>Jeudi</strong><div contenteditable="true">Sciences</div></div>
+                <div class="plan-day"><strong>Vendredi</strong><div contenteditable="true">Oral</div></div>
+                <div class="plan-day"><strong>Samedi</strong><div contenteditable="true">Annales</div></div>
+            </div>
+        </div>
+    </main>
+
+    <aside>
+        <div class="card timer-card">
+            <h3>⏳ Focus Timer</h3>
+            <div class="time" id="tm">25:00</div>
+            <button class="btn" style="background:var(--secondary); color:white;" onclick="start()">Start</button>
+            <button class="btn" style="background:#eee;" onclick="reset()">Reset</button>
+        </div>
+        
+        <div class="card">
+            <h3>📌 Notes Libres</h3>
+            <div contenteditable="true" style="min-height: 150px; outline:none; font-size: 0.9rem;">
+                - Ne pas oublier la calculatrice<br>
+                - Relire la fiche sur la Guerre Froide
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script>
+    function addTask() {
+        const div = document.createElement('div');
+        div.className = 'task-row';
+        div.innerHTML = '<input type="checkbox" onclick="calc()"><input type="text" class="task-input" placeholder="Nouveau chapitre...">';
+        document.getElementById('taskList').appendChild(div);
+        calc();
+    }
+
+    function calc() {
+        const all = document.querySelectorAll('input[type="checkbox"]');
+        const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+        const percent = all.length > 0 ? Math.round((checked.length / all.length) * 100) : 0;
+        document.getElementById('pb').style.width = percent + '%';
+        document.getElementById('pt').innerText = percent + '% complété';
+    }
+
+    let t, s = 1500;
+    function start() {
+        if (t) return;
+        t = setInterval(() => {
+            if (s <= 0) { clearInterval(t); alert("Repos !"); reset(); }
+            else { s--; update(); }
+        }, 1000);
+    }
+    function reset() { clearInterval(t); t = null; s = 1500; update(); }
+    function update() {
+        const m = Math.floor(s / 60), sec = s % 60;
+        document.getElementById('tm').innerText = `${m}:${sec < 10 ? '0' : ''}${sec}`;
+    }
+</script>
+
+</body>
+</html>
